@@ -1,0 +1,37 @@
+This is a collection of code to run the UM tracking scheme
+
+1. Get the tracking scheme
+
+The source scripts and binaries are downloadable from 
+http://www.cycstats.org/tracks/mozart/run-install_cts
+
+Read all the readmes, run all the tests
+The tracking scheme is pretty well documented
+
+2. Format the data
+
+You will probably have data stored in some sort of netcdf file
+This will need to be extracted & reformatted into a file in the
+"ausmap" format with appropriate headers.
+
+Example fortran binaries to do this are in the format directory
+
+As part of this you also need to create a topography file in the same format
+from the same data source
+
+3. Run the tracking scheme
+
+An example shell script is in the run folder
+This uses input files that are in the config files
+and has many parameters specific in the shell script
+
+Common projections I use:
+proj 240 = Equivalent to ~ 0.5 degrees at 30S
+proj 100 = Equivalent to ~ 1.5 degrees at 30S
+
+Common intensity thresholds I use
+Lows, radius 5 dgerees - cv 0.15 or 0.25
+Lows, radius 2 degrees - cv 1
+Highs, radius 10 degrees - cv 0.075
+
+ 

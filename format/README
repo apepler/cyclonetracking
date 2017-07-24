@@ -1,0 +1,14 @@
+This folder includes a number of fortran scripts, used to convert a variety 
+of netcdf reanalyses into the ausmap data format
+
+Before using any of these
+- Check the filenames match with what you use
+- Run the Makefile (i.e. make all) to convert into binaries
+
+Common issues:
+- Some reanalyses provide data in Pa, others hPa. Some needs to be unpacked.
+- The filenames vary a lot, and can be either monthly or annual (or even daily). These all need slightly different processing
+- Annoyingly, sometimes the data needs to be read in as real, other times as real*8. This is useful to check
+- The program is happiest if latitudes go from -90 to 90, and is longitudes go from 0 to 360. If this isn't the case, you may need to reformat. I have some examples for how to do that.
+- The cyclone tracking scheme uses 2-digit years. This means that things crash if you go from 1999 to 2000, etc. In my code, I subtract 80 from these years to give them year numbers of 19 & 20, to make life easier.
+

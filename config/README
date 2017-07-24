@@ -1,0 +1,6 @@
+These are the config files used as inputs for cyclone tracking
+They are designed to have the most variable choices
+set in the shell scripts.
+
+The ingausmake file should be edited for your dataset, changing the
+numbers of lat/lon as well as the resolution, source, & data directory

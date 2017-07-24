@@ -1,0 +1,183 @@
+#!/bin/ksh
+#----------------------------------------------------------------------
+#
+#     SCRIPT: run_tracking
+#
+#     LANGUAGE: ksh
+#
+#     DESCRIPTION:
+#
+# 
+#     A script to find highs or lows in the 6 hourly ERAI mslp 
+#
+#     WRITTEN: A Pepler (based on code by K Braganza).
+#
+
+#----------------------------------------------------------------------
+#     delete function for temporary files
+
+function check_delete {
+    if [[ -f $1 ]]; then
+	rm -f $1
+    fi
+}
+#----------------------------------------------------------------------
+#### Initialise all the important things
+#### User will need to set many of these
+
+bpath=/short/eg3/asp561/cts.dir/cyclonetracking
+
+cpath=$bpath/config ## Config files
+outdir=$bpath/gcyc_out/NCEP1 ### Where output files should go
+gausmake=$bpath/format/gausmake_yearly ## Choose the appropriate guasmake
+ingausmake=6hour.ncep1.ingausmake ## And ingausmake file
+
+### Where the tracking scheme lives
+CYCBIN=/short/eg3/asp561/cts.dir/software.dir/cyc.dir/cycbin
+
+## Where the netcdf data lives
+datapath=/g/data2/ub7/access-s1/hc/raw_model/atmos/psl/daily
+topo=$bpath/format/NCEP1_topo ## Whatever the topo file is
+
+### Tracking settings
+firstyear=2016
+lastyear=2016
+
+type=low
+rad=5
+CV=0.15
+proj=100
+NN=$((proj*2+1))
+if [[ $proj -le 100 ]] ; then
+  DFF=2.0
+else
+  DFF=0.5
+fi
+
+outpath=$outdir/${type}s_proj${proj}_rad${rad%.*}cv${CV}/
+
+### Basic outputs
+diagnostic=diagnostics.out
+stdout=stdout.out
+stderr=stderr.out
+
+check_delete $stdout
+check_delete $stderr
+check_delete $diagnostic
+
+#----------------------------------------------------------------------
+
+print "\nSCRIPT: runplot_mslp_day VERSION: 1.0"
+print "\nSCRIPT: runplot_mslp_day VERSION: 1.0" > $diagnostic
+
+#----------------------------------------------------------------------
+
+echo "Beginning MAIN" >> $diagnostic
+
+print "Running for" $firstyear to $lastyear
+
+#----------------------------------------------------------------------
+# loop through the years
+# You can add more loops here - members, models, intensity thresholds, etc
+iyear=$firstyear
+
+while [[ $iyear -le $lastyear ]]; do   
+
+
+#----------------------------------------------------------------------
+# loop through the seasons
+
+dname="ann"
+
+echo $iyear $dname >> $diagnostic
+date1_loc=$(($iyear-1))1201
+date2_loc=$(($iyear))1231
+
+echo 'date1 loc = ' $date1_loc >> $diagnostic 
+echo 'date2 loc = ' $date2_loc >> $diagnostic 
+
+## Dealing with cross-millenium years
+if [[ $iyear -eq 1999 || $iyear -eq 2000 ]] ; then
+    date1a=$(($iyear-81))1201
+    date2a=$(($iyear-80))1231
+    date1_loc2=${date1a:2:6}
+    date2_loc2=${date2a:2:6}
+else
+    date1_loc2=${date1_loc:2:6}
+    date2_loc2=${date2_loc:2:6}
+fi
+
+print $date1_loc $date1_loc2
+print $date2_loc $date2_loc2
+
+#----------------------------------------------------------------------
+
+check_delete ingausmake
+check_delete incycloc
+check_delete intrack
+check_delete loc_output
+check_delete tape1
+check_delete tape11
+#----------------------------------------------------------------------
+# set up output directories
+
+   if [[ -a $outpath && -d $outpath ]] ; then
+    outpath=$outpath
+   else
+    mkdir $outpath  2>> $stderr
+    outpath=$outpath
+   fi
+
+#----------------------------------------------------------------------
+#     Simple processing script
+
+function runjob {
+
+print "AUTOMATICALLY EDITING CONTROL FILES" >> $diagnostic
+sed -e "s/YYYYMMDD1/$date1_loc/" -e "s/YYYYMMDD2/$date2_loc/" $cpath/$ingausmake > ingausmake
+sed -e "s/YYMMDD1/$date1_loc2/" -e "s/YYMMDD2/$date2_loc2/" -e "s/NN/$NN/g" -e "s/DFF/$DFF/g" -e "s/PROJ/$proj/" -e "s/CVMIN/$CV/g" -e "s/CVRAD/$rad/g" $cpath/6hour.$type.incycloc > incycloc
+sed -e "s/YYMMDD1/$date1_loc2/" -e "s/YYMMDD2/$date2_loc2/" $cpath/6hour.base.intrack > intrack
+
+check_delete tape1
+check_delete tape11
+
+print 'calling gausmake'
+if [[ $iyear -eq 1999 || $iyear -eq 2000 ]] ; then
+    $gausmake spec
+else
+    $gausmake norm
+fi
+cp tape11 monthfile
+
+print 'calling cycloc'
+$CYCBIN/cycloc3x.hr -i incycloc -c loc_output -z $topo monthfile >> $stdout
+
+print 'calling track'
+$CYCBIN/trackx.hr  -FO -i intrack -c loc_output >> $stdout
+touch trackfile
+cat thist?.1 > trackfile
+rm -f thist*
+
+ofile=$outpath/tracks_${iyear}.dat
+print 'calling awk'
+touch $ofile
+awk -f ./maketracks_UM.awk trackfile > $ofile
+
+check_delete tape11
+check_delete trackfile
+#check_delete monthfile
+check_delete $stdout
+
+}
+
+echo "Run Job" >> $diagnostic
+runjob
+iyear=$(($iyear+1))
+print iyear
+#----------------------------------------------------------------------
+done  # year loop
+
+#----------------------------------------------------------------------
+echo "Finished Main" >> $diagnostic
+
+exit

@@ -1,0 +1,10 @@
+INGAUSMAKE PARAMETERS:                               
+                                                                
+NCEP1                           rtype  (a5)   Source (e.g. GASP)   
+2.5X2.5                         gtype  (a10)  Grid resolution
+144                             ilon   (i3)   Length of longitudes
+73                             jlat   (i3)   Length of latitudes
+T                              geopt (a1) Convert from geopotential?
+F                              unpack (a1) Unpack?
+NCEP1_topo                     ofile
+/g/data1/eg3/asp561/NCEP1/           
